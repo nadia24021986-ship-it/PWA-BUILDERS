@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Builders</title>
+    
+    <!-- Menghubungkan ke Manifest PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#007bff">
+    
+    <!-- CSS Sederhana agar Tampilan Menarik -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 90%;
+            width: 400px;
+        }
+        h1 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #666;
+        }
+        .install-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        .install-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>PWA-BUILDERS</h1>
+        <p>Selamat! Aplikasi Progressive Web App (PWA) Anda berhasil berjalan di Vercel.</p>
+        <p>Anda sekarang dapat menginstal aplikasi ini ke layar utama HP Anda.</p>
+    </div>
+
+    <!-- Mendaftarkan Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => console.log('Service Worker terdaftar dengan sukses!', reg))
+                    .catch((err) => console.log('Pendaftaran Service Worker gagal:', err));
+            });
+        }
+    </script>
+</body>
+</html>
+
