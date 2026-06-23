@@ -1,0 +1,18 @@
+{
+  "short_name": "PWA-Builders",
+  "name": "PWA Builders App",
+  "icons": [
+    {
+      "src": "[https://cdn-icons-png.flaticon.com/512/1086/1086933.png](https://cdn-icons-png.flaticon.com/512/1086/1086933.png)",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "theme_color": "#007bff",
+  "orientation": "portrait"
+}
+
