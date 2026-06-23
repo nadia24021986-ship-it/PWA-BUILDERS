@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Instruktur - Live Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 font-sans">
+
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <div class="no-print bg-white p-6 rounded-xl shadow-md flex flex-col md:flex-row items-center justify-between gap-6 border border-gray-200">
+            <div class="space-y-2 w-full">
+                <h2 class="text-xl font-bold text-gray-800">Akses Kuesioner Peserta</h2>
+                <p class="text-sm text-gray-500">Tampilkan QR Code ini di proyektor atau bagikan tautan di bawah kepada peserta:</p>
+                <div id="quizLinkText" class="bg-gray-50 p-3 rounded-lg border text-blue-600 font-mono text-sm break-all select-all">
+                    Memuat tautan...
+                </div>
+            </div>
+            
+            <div id="qrContainer" class="hidden text-center bg-gray-50 p-3 rounded-lg border shrink-0">
+                <img id="qrImage" src="" alt="QR Code" class="w-32 h-32 mx-auto mb-1">
+                <span class="text-xs font-bold text-gray-400 uppercase">Pindai HP</span>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Daftar Nilai & Status Peserta</h1>
+            <button onclick="window.print()" class="no-print bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition shadow flex items-center gap-2">
+                Cetak / Ekspor PDF
+            </button>
+        </div>
+
+        <div class="bg-white shadow-md rounded-xl overflow-hidden border">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-gray-600 text-sm font-semibold">
+                        <th class="p-4">Nama Peserta</th>
+                        <th class="p-4">Jabatan / Instansi</th>
+                        <th class="p-4 text-center">Status</th>
+                        <th class="p-4 text-center">Nilai Akhir</th>
+                    </tr>
+                </thead>
+                <tbody id="participantTableBody" class="divide-y text-gray-700">
+                    <tr>
+                        <td colSpan="4" class="p-8 text-center text-gray-400 italic">Menghubungkan ke server...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // 1. Generate Link dan QR Code Otomatis berdasarkan URL website kamu saat ini
+        if (typeof window !== 'undefined') {
+            const currentOrigin = window.location.origin;
+            const quizUrl = `${currentOrigin}/quiz.html`; // Mengarah ke file quiz.html kamu
+            
+            document.getElementById('quizLinkText').innerText = quizUrl;
+            document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(quizUrl)}`;
+            document.getElementById('qrContainer').classList.remove('hidden');
+        }
+
+        // 2. Fungsi untuk mengambil data peserta secara Real-Time dari database
+        async function fetchLiveData() {
+            try {
+                const res = await fetch('/api/admin-participants');
+                const participants = await res.json();
+                
+                const tableBody = document.getElementById('participantTableBody');
+                tableBody.innerHTML = '';
+
+                if (participants.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colSpan="4" class="p-8 text-center text-gray-400 italic">Belum ada peserta yang membuka tautan.</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                participants.forEach(p => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition';
+
+                    const statusBadge = p.status === 'active' 
+                        ? `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">🟢 Aktif Mengerjakan</span>`
+                        : `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">✅ Selesai</span>`;
+
+                    const scoreDisplay = p.status === 'completed' ? p.score : '-';
+
+                    row.innerHTML = `
+                        <td class="p-4 font-medium text-gray-900">${p.name}</td>
+                        <td class="p-4 text-gray-500">${p.position}</td>
+                        <td class="p-4 text-center">${statusBadge}</td>
+                        <td class="p-4 text-center font-bold text-lg text-gray-900">${scoreDisplay}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Gagal memperbarui data:", err);
+            }
+        }
+
+        // Jalankan fungsi ambil data, lalu ulangi otomatis setiap 3 detik (polling)
+        fetchLiveData();
+        setInterval(fetchLiveData, 3000);
+    </script>
+
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+        }
+    </style>
+</body>
+</html>
+
