@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuesioner Seminar</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
+        
+        <div id="step1" class="space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800 text-center mb-2">Biodata Seminar</h2>
+            <p class="text-sm text-gray-500 text-center mb-6">Silakan isi data diri Anda sebelum memulai kuesioner.</p>
+            <form id="joinForm" class="space-y-4">
+                <input type="text" id="pName" required placeholder="Nama Lengkap" class="w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="pPosition" required placeholder="Jabatan / Instansi" class="w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition shadow">
+                    Mulai Isi Kuesioner
+                </button>
+            </form>
+        </div>
+
+        <div id="step2" class="hidden space-y-6">
+            <h2 class="text-xl font-bold text-gray-800 border-b pb-3">Pertanyaan Evaluasi</h2>
+            <div id="questionsContainer" class="space-y-6">
+                </div>
+            <button id="submitQuizBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition shadow">
+                Kirim Jawaban
+            </button>
+        </div>
+
+        <div id="step3" class="hidden text-center space-y-6 py-4">
+            <h2 class="text-3xl font-bold text-green-600">Terima Kasih!</h2>
+            <p class="text-gray-600">Jawaban Anda telah berhasil dikirim ke instruktur.</p>
+            <div class="bg-gray-100 p-6 rounded-full inline-block">
+                <span class="text-xs text-gray-400 block uppercase tracking-wider font-semibold">Nilai Anda</span>
+                <span id="finalScore" class="text-5xl font-extrabold text-gray-800">0</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let participantId = null;
+        let questions = [];
+        let answers = {};
+
+        // Ambil daftar soal dari database saat halaman dibuka
+        async function loadQuestions() {
+            try {
+                const res = await fetch('/api/questions-list');
+                questions = await res.json();
+            } catch (err) {
+                console.error("Gagal memuat soal", err);
+            }
+        }
+        loadQuestions();
+
+        // Alur Step 1 ke Step 2: Daftarkan nama aktif ke instruktur
+        document.getElementById('joinForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('pName').value;
+            const position = document.getElementById('pPosition').value;
+
+            try {
+                const res = await fetch('/api/participant-join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, position })
+                });
+                const data = await res.json();
+                participantId = data.id;
+
+                // Tampilkan soal ke layar
+                renderQuestions();
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+            } catch (err) {
+                alert('Gagal masuk ke sistem seminar.');
+            }
+        });
+
+        // Fungsi menampilkan soal pilihan ganda atau isian
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            if (questions.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 italic">Belum ada soal yang diaktifkan oleh instruktur.</p>';
+                return;
+            }
+
+            questions.forEach((q, index) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'border-b pb-4 space-y-2';
+                
+                let htmlContent = `<p class="font-semibold text-gray-700">${index + 1}. ${q.question_text}</p>`;
+
+                if (q.type === 'multiple_choice') {
+                    const opts = JSON.parse(q.options || "[]");
+                    opts.forEach(opt => {
+                        if(opt) {
+                            htmlContent += `
+                                <label class="flex items-center space-x-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
+                                    <input type="radio" name="q-${q.id}" value="${opt}" onclick="saveAnswer(${q.id}, '${opt}')">
+                                    <span>${opt}</span>
+                                </label>
+                            `;
+                        }
+                    });
+                } else {
+                    htmlContent += `
+                        <input type="text" placeholder="Jawaban singkat..." class="w-full px-3 py-2 border rounded-lg text-sm" oninput="saveAnswer(${q.id}, this.value)">
+                    `;
+                }
+
+                qDiv.innerHTML = htmlContent;
+                container.appendChild(qDiv);
+            });
+        }
+
+        function saveAnswer(qId, value) {
+            answers[qId] = value;
+        }
+
+        // Alur Step 2 ke Step 3: Kirim jawaban & hitung nilai otomatis
+        document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/participant-submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ participantId, answers })
+                });
+                const data = await res.json();
+
+                document.getElementById('finalScore').innerText = data.score;
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+            } catch (err) {
+                alert('Gagal mengirim jawaban.');
+            }
+        });
+    </script>
+</body>
+</html>
